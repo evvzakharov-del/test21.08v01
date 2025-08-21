@@ -1,1 +1,318 @@
-ок
+<!--
+  Standalone GAS Tester page (for GitHub Pages).
+  Purpose: test Google Apps Script Web App endpoint with GET, POST JSON and audio upload.
+  Notes:
+  - Works without any build tools. Pure HTML+JS.
+  - Keep design accessible and high-contrast.
+-->
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>GAS Web App Tester</title>
+    <style>
+      :root {
+        --bg: #0f172a;      /* slate-900 */
+        --panel: #111827;   /* gray-900 */
+        --muted: #1f2937;   /* gray-800 */
+        --text: #e5e7eb;    /* gray-200 */
+        --text-dim: #9ca3af;/* gray-400 */
+        --primary: #22d3ee; /* cyan-400 */
+        --accent: #a78bfa;  /* violet-400 */
+        --danger: #f87171;  /* red-400 */
+        --success: #34d399; /* emerald-400 */
+        --border: #334155;  /* slate-700 */
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
+        background: linear-gradient(180deg, var(--bg), #030712 40%);
+        color: var(--text);
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 1024px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .hero {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: 0.2px;
+      }
+      p.muted {
+        margin: 0;
+        color: var(--text-dim);
+      }
+      .card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        font-size: 14px;
+        color: var(--text-dim);
+        margin-bottom: 6px;
+      }
+      input[type="text"], textarea {
+        width: 100%;
+        background: var(--panel);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        outline: none;
+      }
+      textarea { min-height: 100px; resize: vertical; }
+      .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      @media (min-width: 800px) { .row { grid-template-columns: 2fr 1fr; } }
+      .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+      button, .btn {
+        background: var(--muted);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: transform 0.05s ease, border-color 0.2s ease, background 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      button:hover, .btn:hover { transform: translateY(-1px); border-color: var(--primary); }
+      button.primary { background: linear-gradient(180deg, rgba(34,211,238,0.15), rgba(34,211,238,0.05)); border-color: #164e63; }
+      button.accent { background: linear-gradient(180deg, rgba(167,139,250,0.18), rgba(167,139,250,0.07)); border-color: #4c1d95; }
+      button.success { background: linear-gradient(180deg, rgba(52,211,153,0.16), rgba(52,211,153,0.06)); border-color: #065f46; }
+      button.danger { background: linear-gradient(180deg, rgba(248,113,113,0.16), rgba(248,113,113,0.06)); border-color: #7f1d1d; }
+      .small { font-size: 12px; color: var(--text-dim); }
+      .grid-2 { display: grid; gap: 12px; grid-template-columns: 1fr; }
+      @media (min-width: 800px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+      pre {
+        background: #0b1220;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        overflow: auto;
+        max-height: 420px;
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .tag { display: inline-block; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; color: var(--text-dim); }
+      .audio {
+        display: grid; gap: 8px; align-items: center; grid-template-columns: 1fr auto;
+      }
+      .hint { color: var(--text-dim); font-size: 13px; }
+      .footer { margin-top: 16px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <section class="hero">
+        <h1>GAS Web App Tester</h1>
+        <p class="muted">Проверьте ваш Google Apps Script Web App через GET / POST JSON и отправку аудио. Работает из GitHub Pages.</p>
+      </section>
+
+      <section class="card">
+        <label for="endpoint">Web App URL (оканчивается на /exec)</label>
+        <input id="endpoint" type="text" placeholder="https://script.google.com/macros/s/AK.../exec" />
+        <div class="hint">Совет: разверните скрипт как Web App с правами “Execute as Me” и доступом “Anyone”.</div>
+      </section>
+
+      <div class="grid-2">
+        <section class="card">
+          <div class="row">
+            <div>
+              <label>Тело запроса (JSON, для POST)</label>
+              <textarea id="jsonBody">{ "message": "hello from github pages", "ts": 0 }</textarea>
+              <div class="hint">Число ts автоматически подставится временем отправки.</div>
+            </div>
+            <div>
+              <label>Аудио (опционально)</label>
+              <div class="audio">
+                <audio id="audioPlayer" controls></audio>
+                <div class="btns">
+                  <button id="recBtn" class="accent" type="button">● Запись</button>
+                  <button id="stopBtn" class="danger" type="button" disabled>■ Стоп</button>
+                </div>
+              </div>
+              <div class="hint">Запись сохраняется как WebM и может быть отправлена в POST JSON (base64).</div>
+            </div>
+          </div>
+          <div class="btns">
+            <button id="btnPing" class="primary" type="button">GET Ping</button>
+            <button id="btnPost" class="success" type="button">POST JSON</button>
+            <a class="btn" id="openUrl" target="_blank" rel="noopener">Открыть URL</a>
+          </div>
+        </section>
+
+        <section class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span class="tag">Ответ сервера</span>
+            <span id="status" class="small">Готово</span>
+          </div>
+          <pre id="output">Здесь появится ответ...</pre>
+        </section>
+      </div>
+
+      <div class="footer">
+        <span class="small">Если CORS не позволяет прочитать ответ, проверьте настройки доступа при деплое Web App и наличие doOptions.</span>
+        <span class="small">UI сделан для наглядного теста; прод-логика — в вашем GAS.</span>
+      </div>
+    </div>
+
+    <script>
+      /** Minimal helper: select element by id. */
+      const $ = (id) => document.getElementById(id);
+
+      /** UI state. */
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let audioBlob = null;
+
+      /** Write status and response. */
+      function setStatus(msg, ok = true) {
+        $('status').textContent = msg;
+        $('status').style.color = ok ? 'var(--text-dim)' : 'var(--danger)';
+      }
+      function setOutput(obj) {
+        try {
+          $('output').textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
+        } catch (_) {
+          $('output').textContent = String(obj);
+        }
+      }
+
+      /** Build URL with query params for GET. */
+      function buildGetUrl(baseUrl) {
+        const url = new URL(baseUrl);
+        url.searchParams.set('ping', '1');
+        url.searchParams.set('source', 'github-pages');
+        url.searchParams.set('time', String(Date.now()));
+        return url.toString();
+      }
+
+      /** Convert Blob to base64 (without data URL prefix). */
+      function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const res = reader.result || '';
+            const b64 = String(res).split(',')[1] || '';
+            resolve(b64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      /** Start recording from the microphone. */
+      async function startRecording() {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          alert('Микрофон недоступен в этом браузере.');
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => { if (e.data?.size) audioChunks.push(e.data); };
+        mediaRecorder.onstop = async () => {
+          audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          $('audioPlayer').src = URL.createObjectURL(audioBlob);
+          setStatus('Запись готова');
+        };
+        mediaRecorder.start();
+        $('recBtn').disabled = true;
+        $('stopBtn').disabled = false;
+        setStatus('Идёт запись…');
+      }
+
+      /** Stop recording and close input stream. */
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          const tracks = mediaRecorder.stream?.getTracks?.() || [];
+          mediaRecorder.stop();
+          tracks.forEach(t => t.stop());
+        }
+        $('recBtn').disabled = false;
+        $('stopBtn').disabled = true;
+      }
+
+      /** GET ping handler. */
+      async function handlePing() {
+        try {
+          const base = $('endpoint').value.trim();
+          if (!base) return alert('Укажите Web App URL (оканчивается на /exec).');
+          const url = buildGetUrl(base);
+          setStatus('GET…');
+          const res = await fetch(url, { method: 'GET' });
+          const text = await res.text();
+          try { setOutput(JSON.parse(text)); } catch { setOutput(text); }
+          setStatus(`GET ${res.status}`);
+        } catch (err) {
+          console.error(err);
+          setStatus('GET ошибка', false);
+          setOutput(String(err));
+        }
+      }
+
+      /** POST JSON handler (optionally with audio). */
+      async function handlePost() {
+        try {
+          const base = $('endpoint').value.trim();
+          if (!base) return alert('Укажите Web App URL (оканчивается на /exec).');
+          const body = JSON.parse($('jsonBody').value || '{}');
+          body.ts = Date.now();
+
+          if (audioBlob) {
+            body.audio = {
+              filename: 'recording.webm',
+              mimeType: audioBlob.type || 'audio/webm',
+              data: await blobToBase64(audioBlob)
+            };
+          }
+
+          setStatus('POST…');
+          const res = await fetch(base, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+
+          const text = await res.text();
+          try { setOutput(JSON.parse(text)); } catch { setOutput(text); }
+          setStatus(`POST ${res.status}`);
+        } catch (err) {
+          console.error(err);
+          setStatus('POST ошибка (возможно CORS)', false);
+          setOutput(String(err));
+        }
+      }
+
+      // Wire UI
+      $('btnPing').addEventListener('click', handlePing);
+      $('btnPost').addEventListener('click', handlePost);
+      $('openUrl').addEventListener('click', (e) => {
+        e.preventDefault();
+        const base = $('endpoint').value.trim();
+        if (!base) return alert('Укажите Web App URL.');
+        window.open(buildGetUrl(base), '_blank', 'noopener');
+      });
+      $('recBtn').addEventListener('click', startRecording);
+      $('stopBtn').addEventListener('click', stopRecording);
+    </script>
+  </body>
+</html>
+
